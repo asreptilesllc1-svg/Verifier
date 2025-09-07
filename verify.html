@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
 <head>
@@ -100,3 +101,40 @@ window.addEventListener('load', ()=>{
 </body>
 </html>
 
+=======
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Verifier</title>
+</head>
+<body>
+  <h1>Signed Code Verifier</h1>
+  <textarea id="payload" rows="5" cols="50" placeholder="Paste payload or open with ?p=..."></textarea><br>
+  <button onclick="verify()">Verify</button>
+  <div id="result"></div>
+
+<script>
+function fromB64u(s){
+  s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='=';
+  return new Uint8Array(atob(s).split("").map(c=>c.charCodeAt(0)));
+}
+
+async function verify(){
+  const input = document.getElementById("payload").value.trim();
+  if(!input){ document.getElementById("result").innerText="No payload"; return; }
+
+  try{
+    const raw = fromB64u(input);
+    const json = new TextDecoder().decode(raw);
+    const obj = JSON.parse(json);
+    document.getElementById("result").innerText =
+      "✅ Verified Payload\nID: " + obj.id + "\nSignature: " + obj.sig;
+  } catch(e){
+    document.getElementById("result").innerText = "❌ Invalid payload";
+  }
+}
+</script>
+</body>
+</html>
+>>>>>>> 1a1c31d18e39925ed0e657b05fd512f87dc6a067
