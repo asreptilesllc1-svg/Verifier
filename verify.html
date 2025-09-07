@@ -1,140 +1,127 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>AS Reptiles Product Verifier</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Product Verifier</title>
   <style>
-    :root { --ok:#16a34a; --bad:#dc2626; --fg:#0f172a; --muted:#64748b; --bg:#0b1020; --card:#11172a; }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(160deg,#0b1020,#11172a);min-height:100vh;
-         display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif;color:#e5e7eb}
-    .card{width:min(760px,92vw);background:rgba(17,23,42,.85);border:1px solid rgba(148,163,184,.18);
-          border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:28px;text-align:center}
-    h1{margin:0 0 8px 0;font-size:1.8rem}
-    img.logo{max-height:60px;margin-bottom:10px}
-    p.sub{margin:0 0 18px 0;color:#cbd5e1;font-size:.95rem}
-    textarea,input,button{width:100%;border-radius:12px;border:1px solid rgba(148,163,184,.25);background:#0b1327;
-      color:#e5e7eb;padding:12px 14px;font-size:15px}
-    textarea{min-height:90px;resize:vertical}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-    button{cursor:pointer;font-weight:600;transition:.2s}
-    .primary{background:#1f2a44}
-    .primary:hover{filter:brightness(1.05)}
-    .secondary{background:#272f49}
-    .secondary:hover{filter:brightness(1.1)}
-    .status{margin-top:16px;padding:14px;border-radius:12px;border:1px solid rgba(148,163,184,.25);font-weight:700;white-space:pre-wrap}
-    .ok{background:rgba(22,163,74,.12);border-color:rgba(22,163,74,.35);color:#bbf7d0}
-    .bad{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.35);color:#fecaca}
-    .muted{color:#cbd5e1;font-weight:500}
-    .footer{margin-top:14px;color:#94a3b8;font-size:.85rem}
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: #fff;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .valid {
+      color: green;
+      font-size: 1.5em;
+    }
+    .invalid {
+      color: red;
+      font-size: 1.5em;
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0a/Reptile_icon.svg" alt="Logo" class="logo"/>
-    <h1>AS Reptiles Verifier</h1>
-    <p class="sub">Scan or paste a code to confirm product authenticity.</p>
-
-    <label for="payload" class="muted">Payload (auto-fills from QR link)</label>
-    <textarea id="payload" placeholder="Auto-fills when you open with ?p=..."></textarea>
-
-    <div class="row">
-      <button class="primary" onclick="verify()">Verify</button>
-      <button class="secondary" onclick="clearBox()">Scan Another</button>
-    </div>
-
-    <div id="result" class="status muted">Waiting for payload…</div>
-    <div class="footer">Powered by cryptographic verification · AS Reptiles</div>
+    <h1>🔍 Product Verification</h1>
+    <textarea id="payload"></textarea><br>
+    <button onclick="verify()">Verify</button>
+    <div class="result" id="result"></div>
   </div>
 
-<script>
-// base64url decode
-function fromB64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
-function clearBox(){ document.getElementById('payload').value=''; setStatus('Waiting for payload…','muted'); }
-function setStatus(msg, cls){ const el=document.getElementById('result'); el.className='status '+cls; el.textContent=msg; }
-
-// your public key
-const publicKeyPem = `-----BEGIN PUBLIC KEY-----
+  <script>
+    const publicKeyPem = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
 8uFzd3bcIq3nf4OxUz6JU3QXUh7JGC2jXWl0JyJhV2FmOd0lgxn4vnR1XA
 -----END PUBLIC KEY-----`;
 
-async function importPublicKey(pem){
-  const b64 = pem.replace(/-----(BEGIN|END) PUBLIC KEY-----/g,'').replace(/\s+/g,'');
-  const raw = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
-  return crypto.subtle.importKey("spki", raw, { name:"ECDSA", namedCurve:"P-256" }, true, ["verify"]);
-}
+    async function importPublicKey(pem) {
+      const bin = atob(pem.replace(/-----.*-----/g, "").replace(/\s/g, ""));
+      const buf = new Uint8Array(bin.length);
+      [...bin].forEach((ch, i) => buf[i] = bin.charCodeAt(i));
+      return crypto.subtle.importKey(
+        "spki", buf.buffer,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false, ["verify"]
+      );
+    }
 
-async function verify(){
-  try{
-    const urlP = new URLSearchParams(location.search).get("p");
-    const input = urlP || document.getElementById("payload").value.trim();
-    if(!input){ setStatus("No payload provided.","bad"); return; }
+    function fromB64uStr(s){
+      if(!s) return null;
+      s = s.replace(/-/g,'+').replace(/_/g,'/');
+      while (s.length % 4) s += '=';
+      return atob(s);
+    }
 
-    const payloadBytes = fromB64u(input);
-    const json = new TextDecoder().decode(payloadBytes);
-    const obj = JSON.parse(json);
+    async function verify() {
+      const payloadBox = document.getElementById("payload");
+      const resultBox = document.getElementById("result");
+      try {
+        const payload = JSON.parse(fromB64uStr(payloadBox.value));
+        const data = new TextEncoder().encode(payload.id);
+        const sig = Uint8Array.from(atob(payload.sig.replace(/-/g,'+').replace(/_/g,'/')), c=>c.charCodeAt(0));
 
-    const pubKey = await importPublicKey(publicKeyPem);
-    const data = new TextEncoder().encode(obj.id);
-    const sig = fromB64u(obj.sig);
-    const valid = await crypto.subtle.verify({ name:"ECDSA", hash:"SHA-256" }, pubKey, sig, data);
+        const pubKey = await importPublicKey(publicKeyPem);
+        const ok = await crypto.subtle.verify({ name:"ECDSA", hash:"SHA-256" }, pubKey, sig, data);
 
-    if(valid){ setStatus(`✅ VALID SIGNATURE\nID: ${obj.id}`,'ok'); }
-    else{ setStatus("❌ INVALID SIGNATURE","bad"); }
+        if (ok) {
+          resultBox.innerHTML = `✅ <span class="valid">Authentic Product</span><br>ID: <b>${payload.id}</b>`;
+        } else {
+          resultBox.innerHTML = `❌ <span class="invalid">Invalid Signature</span>`;
+        }
+      } catch (err) {
+        resultBox.innerHTML = `❌ <span class="invalid">Invalid Payload</span>`;
+      }
+    }
 
-    if(!document.getElementById('payload').value) document.getElementById('payload').value = input;
-  }catch(err){
-    console.error(err);
-    setStatus("❌ Error verifying payload","bad");
-  }
-}
-
-// auto-run if URL has ?p=
-window.addEventListener('load', ()=>{
-  const p = new URLSearchParams(location.search).get("p");
-  if(p){ document.getElementById('payload').value = p; verify(); }
-});
-</script>
+    // auto-fill if ?p= param exists
+    const urlParams = new URLSearchParams(window.location.search);
+    const p = urlParams.get("p");
+    if (p) {
+      document.getElementById("payload").value = p;
+      verify();
+    }
+  </script>
 </body>
 </html>
-
-=======
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Verifier</title>
-</head>
-<body>
-  <h1>Signed Code Verifier</h1>
-  <textarea id="payload" rows="5" cols="50" placeholder="Paste payload or open with ?p=..."></textarea><br>
-  <button onclick="verify()">Verify</button>
-  <div id="result"></div>
-
-<script>
-function fromB64u(s){
-  s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='=';
-  return new Uint8Array(atob(s).split("").map(c=>c.charCodeAt(0)));
-}
-
-async function verify(){
-  const input = document.getElementById("payload").value.trim();
-  if(!input){ document.getElementById("result").innerText="No payload"; return; }
-
-  try{
-    const raw = fromB64u(input);
-    const json = new TextDecoder().decode(raw);
-    const obj = JSON.parse(json);
-    document.getElementById("result").innerText =
-      "✅ Verified Payload\nID: " + obj.id + "\nSignature: " + obj.sig;
-  } catch(e){
-    document.getElementById("result").innerText = "❌ Invalid payload";
-  }
-}
-</script>
-</body>
-</html>
->>>>>>> 1a1c31d18e39925ed0e657b05fd512f87dc6a067
