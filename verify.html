@@ -12,6 +12,7 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      flex-direction: column;
     }
     .card {
       background: #fff;
@@ -60,9 +61,22 @@
       color: red;
       font-size: 1.5em;
     }
+    #reader {
+      width: 300px;
+      margin-bottom: 20px;
+    }
+    #camera-hint {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
+  <!-- QR Camera Scanner -->
+  <div id="reader"></div>
+  <p id="camera-hint">📷 Please allow camera access to scan a QR code.</p>
+
   <div class="card">
     <h1>🔍 Product Verification</h1>
     <textarea id="payload"></textarea><br>
@@ -70,12 +84,17 @@
     <div class="result" id="result"></div>
   </div>
 
+  <!-- ✅ Fixed: Correct standalone QR Code Scanner Library -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+
   <script>
+    // Your public key
     const publicKeyPem = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
 8uFzd3bcIq3nf4OxUz6JU3QXUh7JGC2jXWl0JyJhV2FmOd0lgxn4vnR1XA
 -----END PUBLIC KEY-----`;
 
+    // Import public key for verification
     async function importPublicKey(pem) {
       const bin = atob(pem.replace(/-----.*-----/g, "").replace(/\s/g, ""));
       const buf = new Uint8Array(bin.length);
@@ -87,6 +106,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
       );
     }
 
+    // Base64url decode helper
     function fromB64uStr(s){
       if(!s) return null;
       s = s.replace(/-/g,'+').replace(/_/g,'/');
@@ -94,6 +114,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
       return atob(s);
     }
 
+    // Main verify function
     async function verify() {
       const payloadBox = document.getElementById("payload");
       const resultBox = document.getElementById("result");
@@ -115,13 +136,31 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
       }
     }
 
-    // auto-fill if ?p= param exists
+    // Auto-fill if ?p= param exists
     const urlParams = new URLSearchParams(window.location.search);
     const p = urlParams.get("p");
     if (p) {
       document.getElementById("payload").value = p;
       verify();
     }
+
+    // QR Scanner setup
+    function onScanSuccess(decodedText) {
+      const pValue = decodedText.includes("p=") ? decodedText.split("p=")[1] : decodedText;
+      document.getElementById("payload").value = pValue;
+      verify();
+    }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        html5QrCode.start(
+          { facingMode: "environment" }, // back camera
+          { fps: 10, qrbox: 250 },
+          onScanSuccess
+        );
+      }
+    }).catch(err => console.error("Camera error:", err));
   </script>
 </body>
 </html>
