@@ -2,99 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Product Verifier</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f6fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      flex-direction: column;
-    }
-    .card {
-      background: #fff;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
-    }
-    h1 {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-    }
-    textarea {
-      width: 100%;
-      height: 80px;
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      resize: none;
-    }
-    button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: #007bff;
-      color: #fff;
-      font-size: 1em;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .result {
-      margin-top: 20px;
-      font-size: 1.2em;
-      font-weight: bold;
-    }
-    .valid {
-      color: green;
-      font-size: 1.5em;
-    }
-    .invalid {
-      color: red;
-      font-size: 1.5em;
-    }
-    #reader {
-      width: 300px;
-      margin-bottom: 20px;
-    }
-    #camera-hint {
-      font-size: 0.9em;
-      color: #666;
-      margin-bottom: 20px;
-    }
-  </style>
+  <title>Minimal Verifier</title>
 </head>
 <body>
-  <!-- QR Camera Scanner -->
-  <div id="reader"></div>
-  <p id="camera-hint">📷 Please allow camera access to scan a QR code.</p>
+  <h2>QR Scanner Test</h2>
+  <div id="reader" style="width:300px;"></div>
+  <textarea id="payload" style="width:300px; height:80px;"></textarea><br>
+  <button onclick="verify()">Verify</button>
+  <p id="result"></p>
 
-  <div class="card">
-    <h1>🔍 Product Verification</h1>
-    <textarea id="payload"></textarea><br>
-    <button onclick="verify()">Verify</button>
-    <div class="result" id="result"></div>
-  </div>
-
-  <!-- ✅ Fixed: Correct standalone QR Code Scanner Library -->
+  <!-- ✅ Correct standalone QR Code Scanner Library -->
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
   <script>
-    // Your public key
     const publicKeyPem = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
 8uFzd3bcIq3nf4OxUz6JU3QXUh7JGC2jXWl0JyJhV2FmOd0lgxn4vnR1XA
 -----END PUBLIC KEY-----`;
 
-    // Import public key for verification
     async function importPublicKey(pem) {
       const bin = atob(pem.replace(/-----.*-----/g, "").replace(/\s/g, ""));
       const buf = new Uint8Array(bin.length);
@@ -106,7 +31,6 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
       );
     }
 
-    // Base64url decode helper
     function fromB64uStr(s){
       if(!s) return null;
       s = s.replace(/-/g,'+').replace(/_/g,'/');
@@ -114,7 +38,6 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
       return atob(s);
     }
 
-    // Main verify function
     async function verify() {
       const payloadBox = document.getElementById("payload");
       const resultBox = document.getElementById("result");
@@ -126,22 +49,10 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
         const pubKey = await importPublicKey(publicKeyPem);
         const ok = await crypto.subtle.verify({ name:"ECDSA", hash:"SHA-256" }, pubKey, sig, data);
 
-        if (ok) {
-          resultBox.innerHTML = `✅ <span class="valid">Authentic Product</span><br>ID: <b>${payload.id}</b>`;
-        } else {
-          resultBox.innerHTML = `❌ <span class="invalid">Invalid Signature</span>`;
-        }
-      } catch (err) {
-        resultBox.innerHTML = `❌ <span class="invalid">Invalid Payload</span>`;
+        resultBox.textContent = ok ? `✅ Authentic Product ID: ${payload.id}` : "❌ Invalid Signature";
+      } catch {
+        resultBox.textContent = "❌ Invalid Payload";
       }
-    }
-
-    // Auto-fill if ?p= param exists
-    const urlParams = new URLSearchParams(window.location.search);
-    const p = urlParams.get("p");
-    if (p) {
-      document.getElementById("payload").value = p;
-      verify();
     }
 
     // QR Scanner setup
@@ -155,12 +66,13 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEAfW16OTCe9OxYXQauIe01bCx98AO
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
         html5QrCode.start(
-          { facingMode: "environment" }, // back camera
+          { facingMode: "environment" },
           { fps: 10, qrbox: 250 },
           onScanSuccess
         );
       }
-    }).catch(err => console.error("Camera error:", err));
+    });
   </script>
 </body>
 </html>
+
